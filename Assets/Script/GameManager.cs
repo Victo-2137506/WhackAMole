@@ -13,9 +13,13 @@ public class GameManager : MonoBehaviour
     [Header("Textes")]
     [SerializeField] private TextMeshProUGUI texteTimer;
     [SerializeField] private TextMeshProUGUI texteScoreFinal;
+    [SerializeField] private TextMeshProUGUI texteScore;
+
+    [Header("Chronomètre")]
+    [SerializeField] private float tempsDepart = 60f;
 
     private EtatJeu etatActuel;
-    private float tempsEcoule;
+    private float tempsRestant;
     private bool timerActif;
 
     void Start()
@@ -27,8 +31,20 @@ public class GameManager : MonoBehaviour
     {
         if (timerActif)
         {
-            tempsEcoule += Time.deltaTime;
-            AfficherTimer();
+            tempsRestant -= Time.deltaTime;
+
+            if (tempsRestant <= 0f)
+            {
+                tempsRestant = 0f;
+                timerActif = false;
+                AfficherTimer();
+                TerminerJeu();
+            }
+            else
+            {
+                AfficherTimer();
+                AfficherScore();
+            }
         }
     }
 
@@ -42,16 +58,17 @@ public class GameManager : MonoBehaviour
 
     public void CommencerJeu()
     {
-        tempsEcoule = 0f;
+        tempsRestant = tempsDepart;
         timerActif = true;
         AfficherTimer();
+        AfficherScore();
         ChangerEtat(EtatJeu.EnJeu);
     }
 
     public void TerminerJeu()
     {
         timerActif = false;
-        int score = Mathf.Max(100, 1000 - Mathf.FloorToInt(tempsEcoule) * 10);
+        int score = CalculerScore();
         texteScoreFinal.text = $"Score : {score}";
         ChangerEtat(EtatJeu.GameOver);
     }
@@ -65,8 +82,19 @@ public class GameManager : MonoBehaviour
 
     private void AfficherTimer()
     {
-        int minutes = Mathf.FloorToInt(tempsEcoule / 60f);
-        int secondes = Mathf.FloorToInt(tempsEcoule % 60f);
+        int minutes = Mathf.FloorToInt(tempsRestant / 60f);
+        int secondes = Mathf.FloorToInt(tempsRestant % 60f);
         texteTimer.text = $"{minutes:00}:{secondes:00}";
+    }
+
+    private void AfficherScore()
+    {
+        texteScore.text = $"Score : {CalculerScore()}";
+    }
+
+    private int CalculerScore()
+    {
+        float tempsEcoule = tempsDepart - tempsRestant;
+        return Mathf.Max(100, 1000 - Mathf.FloorToInt(tempsEcoule) * 10);
     }
 }
