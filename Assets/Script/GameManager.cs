@@ -1,6 +1,8 @@
 using UnityEngine;
 using TMPro;
 
+// Le code est inspiré des notes de cours : https://envimmersif-cegepvicto.github.io/exercice_ui_jeu_tri/
+
 public class GameManager : MonoBehaviour
 {
     public enum EtatJeu { Menu, EnJeu, GameOver }
@@ -18,13 +20,35 @@ public class GameManager : MonoBehaviour
     [Header("Chronomètre")]
     [SerializeField] private float tempsDepart = 60f;
 
+    [Header("Moles")]
+    [SerializeField] private GameObject listeMoles;
+    [SerializeField] private float intervaleDebut = 1.5f;
+    [SerializeField] private float intervaleFin = 0.3f;
+
+    [Header("Spawner")]
+    [SerializeField] private MoleSpawner moleSpawner;
+
+    private Mole[] moles;
+
     private EtatJeu etatActuel;
     private float tempsRestant;
     private bool timerActif;
+    private int score;
+
+    // Singleton de GameManager
+    public static GameManager Instance { get; private set; }
 
     void Start()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
         ChangerEtat(EtatJeu.Menu);
+        moles = listeMoles.GetComponentsInChildren<Mole>();
     }
 
     void Update()
@@ -43,7 +67,6 @@ public class GameManager : MonoBehaviour
             else
             {
                 AfficherTimer();
-                AfficherScore();
             }
         }
     }
@@ -60,16 +83,23 @@ public class GameManager : MonoBehaviour
     {
         tempsRestant = tempsDepart;
         timerActif = true;
+        score = 0;
         AfficherTimer();
-        AfficherScore();
         ChangerEtat(EtatJeu.EnJeu);
+        moleSpawner.Demarrer();
+    }
+
+    public void CalculerPoints(int nbPoints)
+    {
+        score += nbPoints;
+        texteScore.text = $"Score : {score}";
     }
 
     public void TerminerJeu()
     {
         timerActif = false;
-        int score = CalculerScore();
         texteScoreFinal.text = $"Score : {score}";
+        moleSpawner.Arreter();
         ChangerEtat(EtatJeu.GameOver);
     }
 
@@ -85,16 +115,5 @@ public class GameManager : MonoBehaviour
         int minutes = Mathf.FloorToInt(tempsRestant / 60f);
         int secondes = Mathf.FloorToInt(tempsRestant % 60f);
         texteTimer.text = $"{minutes:00}:{secondes:00}";
-    }
-
-    private void AfficherScore()
-    {
-        texteScore.text = $"Score : {CalculerScore()}";
-    }
-
-    private int CalculerScore()
-    {
-        float tempsEcoule = tempsDepart - tempsRestant;
-        return Mathf.Max(100, 1000 - Mathf.FloorToInt(tempsEcoule) * 10);
     }
 }
