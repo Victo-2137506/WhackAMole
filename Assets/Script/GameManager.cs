@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+
 // Le code est inspiré des notes de cours : https://envimmersif-cegepvicto.github.io/exercice_ui_jeu_tri/
 public class GameManager : MonoBehaviour
 {
