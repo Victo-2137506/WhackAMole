@@ -8,16 +8,15 @@ public class MoleSpawner : MonoBehaviour
     [SerializeField] private GameObject molePrefab;
 
     [Header("Trous (trou1 à trou9)")]
-    [SerializeField] private Transform[] trous; // Assigne trou1–trou9 dans l'Inspector
+    [SerializeField] private Transform[] trous;
 
     [Header("Timing")]
-    [SerializeField] private float intervaleSpawn = 1.5f;  // Temps entre chaque spawn
-    [SerializeField] private float dureeVisible = 2f;      // Temps avant que la mole disparaisse
+    [SerializeField] private float dureeVisible = 2f;
+    [SerializeField] private float offsetHauteur = -0.1f;
 
     [Header("Difficulté")]
     [SerializeField] private int maxMolesSimultanees = 3;
 
-    private List<int> trouxDisponibles = new List<int>();
     private bool[] trouOccupe;
     private bool actif = false;
 
@@ -26,47 +25,36 @@ public class MoleSpawner : MonoBehaviour
         trouOccupe = new bool[trous.Length];
     }
 
-    public void Demarrer()
-    {
-        actif = true;
-        StartCoroutine(BoucleSpawn());
-    }
-
     public void Arreter()
     {
         actif = false;
         StopAllCoroutines();
     }
 
-    private IEnumerator BoucleSpawn()
+    public void SpawnerUneMole()
     {
-        while (actif)
-        {
-            yield return new WaitForSeconds(intervaleSpawn);
+        actif = true;
 
-            int molesActives = 0;
-            for (int i = 0; i < trouOccupe.Length; i++)
-                if (trouOccupe[i]) molesActives++;
+        // Compter les moles actives
+        int molesActives = 0;
+        for (int i = 0; i < trouOccupe.Length; i++)
+            if (trouOccupe[i]) molesActives++;
 
-            if (molesActives < maxMolesSimultanees)
-                SpawnerMole();
-        }
-    }
+        if (molesActives >= maxMolesSimultanees) return;
 
-    private void SpawnerMole()
-    {
-        // Construire la liste des trous libres
-        trouxDisponibles.Clear();
+        // Trouver les trous disponibles
+        List<int> trouxDisponibles = new List<int>();
         for (int i = 0; i < trous.Length; i++)
             if (!trouOccupe[i]) trouxDisponibles.Add(i);
 
         if (trouxDisponibles.Count == 0) return;
 
+        // Choisir un trou aléatoire
         int index = trouxDisponibles[Random.Range(0, trouxDisponibles.Count)];
         trouOccupe[index] = true;
 
-        // Spawn au-dessus du cylindre (ajuste le offset Y selon ta scène)
-        Vector3 positionSpawn = trous[index].position + Vector3.up * -0.1f;
+        // Spawner la mole
+        Vector3 positionSpawn = trous[index].position + Vector3.up * offsetHauteur;
         GameObject obj = Instantiate(molePrefab, positionSpawn, trous[index].rotation);
 
         Mole mole = obj.GetComponent<Mole>();
@@ -79,7 +67,6 @@ public class MoleSpawner : MonoBehaviour
     {
         float elapsed = 0f;
 
-        // Attendre que la mole soit frappée OU que le délai expire
         while (elapsed < dureeVisible && obj != null && mole != null && mole.estSortie)
         {
             elapsed += Time.deltaTime;

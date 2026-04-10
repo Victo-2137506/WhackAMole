@@ -1,8 +1,6 @@
 using UnityEngine;
 using TMPro;
-
 // Le code est inspiré des notes de cours : https://envimmersif-cegepvicto.github.io/exercice_ui_jeu_tri/
-
 public class GameManager : MonoBehaviour
 {
     public enum EtatJeu { Menu, EnJeu, GameOver }
@@ -17,25 +15,22 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI texteScoreFinal;
     [SerializeField] private TextMeshProUGUI texteScore;
 
-    [Header("Chronomètre")]
-    [SerializeField] private float tempsDepart = 60f;
+    [Header("Timer")]
+    [SerializeField] private int minutesDepart = 1;
+    [SerializeField] private int secondesDepart = 0;
 
     [Header("Moles")]
-    [SerializeField] private GameObject listeMoles;
+    [SerializeField] private MoleSpawner moleSpawner;
     [SerializeField] private float intervaleDebut = 1.5f;
     [SerializeField] private float intervaleFin = 0.3f;
 
-    [Header("Spawner")]
-    [SerializeField] private MoleSpawner moleSpawner;
-
-    private Mole[] moles;
-
     private EtatJeu etatActuel;
     private float tempsRestant;
+    private float tempsTotal;
     private bool timerActif;
     private int score;
+    private float intervaleTimer = 0f;
 
-    // Singleton de GameManager
     public static GameManager Instance { get; private set; }
 
     void Start()
@@ -46,28 +41,34 @@ public class GameManager : MonoBehaviour
             return;
         }
         Instance = this;
-
         ChangerEtat(EtatJeu.Menu);
-        moles = listeMoles.GetComponentsInChildren<Mole>();
     }
 
     void Update()
     {
-        if (timerActif)
-        {
-            tempsRestant -= Time.deltaTime;
+        if (!timerActif) return;
 
-            if (tempsRestant <= 0f)
-            {
-                tempsRestant = 0f;
-                timerActif = false;
-                AfficherTimer();
-                TerminerJeu();
-            }
-            else
-            {
-                AfficherTimer();
-            }
+        tempsRestant -= Time.deltaTime;
+
+        if (tempsRestant <= 0f)
+        {
+            tempsRestant = 0f;
+            AfficherTimer();
+            TerminerJeu();
+            return;
+        }
+
+        AfficherTimer();
+
+        // Progression de 0 (début) à 1 (fin)
+        float progression = 1f - (tempsRestant / tempsTotal);
+        float intervaleActuel = Mathf.Lerp(intervaleDebut, intervaleFin, progression);
+
+        intervaleTimer += Time.deltaTime;
+        if (intervaleTimer >= intervaleActuel)
+        {
+            intervaleTimer = 0f;
+            moleSpawner.SpawnerUneMole();
         }
     }
 
@@ -81,12 +82,14 @@ public class GameManager : MonoBehaviour
 
     public void CommencerJeu()
     {
-        tempsRestant = tempsDepart;
-        timerActif = true;
+        tempsTotal = minutesDepart * 60f + secondesDepart;
+        tempsRestant = tempsTotal;
+        intervaleTimer = 0f;
         score = 0;
+        texteScore.text = $"Score : {score}";
+        timerActif = true;
         AfficherTimer();
         ChangerEtat(EtatJeu.EnJeu);
-        moleSpawner.Demarrer();
     }
 
     public void CalculerPoints(int nbPoints)
